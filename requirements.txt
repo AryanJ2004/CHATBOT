@@ -6,4 +6,3 @@ werkzeug==2.2.2
 python-Levenshtein
 gunicorn==19.7.1
 mysql.connector
-random
