@@ -20,10 +20,10 @@ model = genai.GenerativeModel('gemini-pro')
 # Database connection setup
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="12345",  # Replace with your actual password
-        database="db4"
+        host=os.environ.get("MYSQL_ADDON_HOST"),
+        user=os.environ.get("MYSQL_ADDON_USER"),
+        password=os.environ.get("MYSQL_ADDON_PASSWORD"),  # This line is now correct
+        database=os.environ.get("MYSQL_ADDON_DB")
     )
 
 # Function to fetch predefined answers from the database
