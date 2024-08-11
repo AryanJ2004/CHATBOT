@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNJB's COMP AI Assist</title>
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
+        crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}" />
+
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            background: rgb(44, 47, 59);
+            background: -webkit-linear-gradient(to right, rgb(40, 59, 34), rgb(54, 60, 70), rgb(32, 32, 43));
+            background: linear-gradient(to right, rgb(38, 51, 61), rgb(50, 55, 65), rgb(33, 33, 78));
+        }
+
+        .chat {
+            margin-top: auto;
+            margin-bottom: auto;
+            height: 80%;
+        }
+
+        .card {
+            height: calc(100% - 40px); /* Adjust the height as needed */
+            max-height: calc(100% - 40px); /* Adjust the max height as needed */
+            overflow: hidden; /* Ensure the content overflows hidden for the chat messages */
+            position: relative; /* Add this line to make the .predictive-text position relative to .card */
+        }
+
+        .msg_card_body {
+            overflow-y: auto; /* Enable vertical scrolling if the content exceeds the height */
+            max-height: calc(100% - 120px); /* Adjust the max height based on the desired chat body height */
+        }
+
+        .predictive-text {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 5px;
+            z-index: 999;
+            cursor: pointer;
+            max-height: 150px;
+            overflow-y: auto;
+            width: calc(100% - 22px);
+            bottom: 65px;
+            left: 10px;
+            color: #fff;
+        }
+
+        .predictive-text p {
+            margin: 5px 0;
+            padding: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 5px;
+        }
+
+        .predictive-text p:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .predictive-text p:not(:last-child) {
+            border-bottom: 1px solid #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid h-100">
+        <div class="row justify-content-center h-100">
+            <div class="col-md-8 col-xl-6 chat">
+                <div class="card">
+                    <div class="card-header msg_head">
+                        <div class="d-flex bd-highlight">
+                            <div class="img_cont">
+                                <img src="https://i.ibb.co/jRMcPVs/snjb.jpg" class="rounded-circle user_img">
+                                <span class="online_icon"></span>
+                            </div>
+                            <div class="user_info">
+                                <span>
+                                    SNJB's Comp AI Assist
+                                    </span>
+                                <p>Dive into College and Beyond: Ask Anything! 🎓</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="messageFormeight" class="card-body msg_card_body">
+                        <!-- Chat messages will be displayed here -->
+                    </div>
+                    <div class="card-footer" style="position: relative;">
+                        <form id="messageArea" class="input-group">
+                            <input type="text" id="text" name="msg" placeholder="Type your message..." autocomplete="off"
+                                class="form-control type_msg" required />
+                            <div class="input-group-append">
+                                <button type="submit" id="send" class="input-group-text send_btn"><i
+                                        class="fas fa-location-arrow"></i></button>
+                            </div>
+                        </form>
+                        <div class="predictive-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#text").on("input", function() {
+                var input = $(this).val().toLowerCase();
+                var predictions = getPredictiveText(input);
+                showPredictiveText(predictions);
+            });
+
+            $(document).on("click", ".predictive-text p", function() {
+                var text = $(this).text();
+                $("#text").val(text);
+                $(".predictive-text").hide();
+            });
+
+            function getPredictiveText(input) {
+                var predictions = [];
+                var patterns = {
+                    "greeting": ["Hi", "Hey", "How are you", "what's up", "Is anyone there?", "Hello", "Good day"],
+                    "name": ["what is your name", "name", "what's your name", "who are you", "what should I call you","What can you do","who r u"],
+                    "courses": ["what courses are available", "how many courses are there in this college"],
+                    "College Name": ["College Name", "Name College"],
+                    "College Information": ["College Information", "Information Of College","SNJB","SNJBCOE"],
+                    "courseDuration": ["how long will be BE or MBA course", "how long will it take to complete M.Tech ", "how long will it take to complete BE"],
+                    "Location": ["location", "where is it located", "what is the location of the college"],
+                    "semesters": ["how many semesters are there in a year", "how many semesters one should study in a year"],
+                    "semDuration": ["what is the duration of a semester", "how long will a semester be"],
+                    "studentRequirements": ["what are the student requirements for admission",
+          "entry requirements",
+          "admission requirements"],
+                    "Teachingstyle": ["What is the teaching style of this college?", "Is the teaching pattern different from other college?", "What is the teaching format?"],
+                    "exams": ["What are the exams like?", "What is the exam pattern?","Exam Co-ordinator",
+          "Oral Incharge","Practical Exam Incharge","University Exam Incharge","Exam"],
+                    "Timings": ["What are your timings? "],
+                    "Fun activity": ["Will there be any extra curricular activities?", "Does the college conduct any fun program?"],
+                    "Facilities": ["What facilities are provided by the college?", "What are the facilities of college for students?"],
+                    "Thanks": ["Thank You ", "Thanks", "That's helpful", "Thanks for helping me."],
+                    "KMSHOD": [ "HOD ",
+      "Head of department",
+      "Sanghavi Mam",
+      "HOD Cabin-130","130",
+      "K.M. Sanghavi","Administrative Coordinator",
+          "NBA Coordinator",
+          "Event Coordinator","College Development Committee Member",
+          "Seminar Coordinator","Kainjan Sanghavi","Kainjan Mam","Dr.K.M.Sanghavi"],
+          "B.A.Khivsara":["Khivsara Mam ",
+          "Lab Location-132","Academic Coordinator",
+          "S&IC Coordinator",
+          "Mentor Coordinator",
+          "Module Coordinator","132","Bhavana Mam","Bhavana Khivsara","B.A.Khivsara"],
+      "N.S. Khairnar": ["Khairnar Mam ",
+      "Lab Location-132","132",
+          "Discipline Committee Member",
+          "Digital Resource Cell Member",
+          "Academic Calender Incharge",
+          "Earn and Learn Coordinator",
+          "PBS Coordinator",
+          "Software Lab Incharge",
+          "SMS Coordinator","Nilam Khairnar","Nilam Mam","N.S. Khairnar"],
+      "S.S. Wadnere": ["Wadnere Sir ",
+          "Sandeep Sir",
+          "Sandeep Wadnere",
+          "Lab Location-135","135",
+          "NBA Criteria-6 Coordinator",
+          "Deadstock Incharge ",
+          "HL Lab Incharge",
+          "Budget Coordinator",
+          "Server Room Maintenance ",
+          "Computer Maintenance",
+          "Internet Maintenance ",
+          "FE Classcordinator",
+          "Mentor for FE and SE students",
+          "CCTV maintenance ",
+          "Magazine Coordinator",
+          "College level NBA Criteria","S.S. Wadnere"],
+          "P.S. Desai": ["Desai Sir ",
+          "Pankaj Sir",
+          "Lab Location-134",
+          "Compute Center A",
+          "Compute Center B",
+          "134",
+          "Compute Center A",
+          "Compute Center B",
+          "FC- Coordinator",
+          "III Cell Coordinator",
+          "Department NAAC Coordinator",
+          "Department Admin coordinator",
+          "Department Budget coordinator",
+          "FE-Class Coordinator",
+          "IIRS Outreach program Coordinator",
+          "Vision -Mission Coordinator",
+          "Department Internship Coordinator",
+          "AICTE-Parakh cordinator","Pankaj Desai","P.S. Desai"],
+          "M.R. Sanghavi": ["Sanghavi Sir ",
+          "Vice-Principal",
+          "Lab Location-131","131","Mahesh Sir",
+          "Dean Academics",
+          "Vice Principal",
+          "SPOC - ERP",
+          "Computer/Equipment Purchasing",
+          "Comp.Maintenance",
+          "Admission Incharge FE","Mahesh Sanghavi","Dr.M.R.Sanghavi","M.R. Sanghavi"],
+                    "Prof. D. R. Agrawal": ["Agrawal Sir",
+          "D.R. Agrawal",
+          "Agrawal",
+          "Prof. Agrawal",
+          "Lab Location-137","137","NSS",
+          "Virtual Labs",
+          "Unnat Bharat Abhiyaan",
+          "TE Class Coordinator",
+          "National Anthemn",
+          "Data Collection for various surveys",
+          "sustainability cell coordinator",
+          "Earn and Learn",
+          "R & D coordinator",
+          "NAAC Criteria 1",
+          "Open Source Lab Incharge",
+          "Linux RED HAT Center "],
+                    "R. R. Bhandari": ["Bhandari Sir",
+          "R.R. Bhandari",
+          "Bhandari",
+          "Prof. Bhandari","Criteria 5",
+          "CS Lab Incharge",
+          "Academic Calendar Coordinator",
+          "Alumni Coordinator (Department Level)",
+          "Alumni Coordinator (College Level)",
+          "III Co-cordinator",
+          "Cyber Cell Program Lab Incharge",
+          "Digital Marketing Coordinator College Level",
+          "Zoom & Youtube Program Coordinator",
+          "News Bulletin Coordinator",
+          "Consultancy Coordinator",
+          "Criteria 2.2 Coordinator",
+          "Department Level Design Work",
+          "Website Coordinator ",
+          "DSE Admission",
+          "Visiting Faculty Coordinator",
+          "Module Coordinator ",
+          "SNJB Festival Technical Committee","Rajiv Bhandari"],
+                    "A.J.Shakadwipi": ["Shakadwipi Sir",
+          "A.J. Shakadwipi",
+          "Prof. Shakadwipi",
+          "Lab Location-119","119",
+          "Result Analysis I/C",
+          "Feedback Analysis I/C",
+          "Result Coordinator (Institute level)",
+          "ERP DCC",
+          "SE-A Class CO-ORDINATOR",
+          "SMS Incharge ",
+          "NBA Criteria -4 Coordinator",
+          "NAAC Criteria 2.6 coordinator",
+          "Mentor of 25 Student",
+          "Operating System Lab 238  I/C",
+          "Anti Ragging Sqaud","Amol Shakadwipi","Amol Sir"],
+                    "G.P. Dhomse": ["Dhomse Sir",
+          "G.P. Dhomse",
+          "Prof. Dhomse",
+          "Lab Location-137",
+          "Networking Lab","137","T & P Co-ordinator",
+          "University OR/PR/Insem Exam Incharge",
+          "Continuous Assessment Sheet",
+          "CNL Lab Incharge","Ghanshyam Dhomse","Ghanshyam Sir"],
+          "S.V.Sinha": ["Sinha Mam",
+        "S.V. Sinha",
+        "Prof. Sinha",
+        "Lab Location-119","119","APL LAB I/C",
+          "Module Coordinator",
+          "R & D coordinator",
+          "Website Coordinator","Swati Sinha","Swati Mam"
+        ],
+        "D.P,Pawar": ["Pawar Mam",
+          "D.P. Pawar",
+          "Deepali Mam",
+          "Prof. Pawar",
+          "Computer Science Lab",
+          "Lab Location-110A","Staff  Achivement Cordinator",
+          "Student's Achivement Cordinator",
+          "Notice Board Incharge",
+          "Criteria 5",
+          "Lab Incharge(Programming Lab)",
+          "E-Saptrang  Singing Cordinator",
+          "Clutural Club Singing Cordinator",
+          "Counsiling commitee cordinator",
+          "Criteria 4.6 Cordinator",
+          "Monthly Report Cordinator",
+          "Minutes of meeting Co-cordinator",
+          "110A","Deepali Pawar","Dipali Pawar"],
+        "N. P. Bora": ["Bora Mam",
+          "N.P. Bora",
+          "Neha Mam",
+          "Prof. Bora",
+          "Lab Location-110B",
+          "Computer Graphics Lab","110B","IQAC Committee Member",
+          "Central Library Committee Member",
+          "Digital Resource Cell Incharge",
+          "Alumni Committee Member",
+          "NAAC Departmental Coordinator",
+          "Time Table Incharge",
+          "Computer Graphics Lab I/C",
+          "Class Coordinator SE/TE",
+          "NAAC Criteria 2.3 coordinator",
+          "Departmental Library Coordinator",
+          "Digital Learning Daily Report",
+          "Coursera Course Coordinator",
+          "Ekeeda Digital Library Coordinator",
+          "Module Coordinator","Neha Bora"],
+        "S. B. Ambhore": [ "Ambhore Sir",
+          "S.B. Ambhore",
+          "Prof. Ambhore",
+          "Lab Location-136",
+          "Software Lab","136","NBA 2.2.2- Sub Criteria",
+          "Smart India Hackathon  SPOC",
+          "AICTE-ECI-ISTE-Chhatra Vishwakarma Awards SPOC",
+          "SC/ST Cell Incharge",
+          "Mission Practical","Software Laboratory In-Charge"],
+        "S.A.Chavan": ["Chavan Mam",
+          "S.A. Chavan",
+          "Prof. Chavan",
+          "Lab Location-220",
+          "Computer Lab I","220","Virtual Lab Nodal Technical Coordinator",
+          "State level DSE Paper Presentation Member",
+          "sustainability cell Member",
+          "Canteen Comitee Coordinator",
+          "Discipline Committee Member",
+          "Alumini Comitee Member",
+          "Ezacus Technology Pvt  ltd Sponsor Lab activity",
+          "Cultural Dance Audition Incharge","Girls Common Room Incharge","Suchita Chavan","Dr.Suchita Chavan"],
+        "M.D.KAWADE": ["Kawade Mam",
+          "M.D. KAWADE",
+          "Prof. KAWADE",
+          "Lab Location-114",
+          "Hardware Lab","114",
+          "SSDC cell coordinator",
+          "Earn and Learn",
+          "Linux RED HAT Center","Alumini Coordinator of IT dept.","Member of Takarakr Nivaran Samittee","Maduri Kawade"],
+        "D. S. Rajnor": ["Rajnor Sir",
+          "D.S. Rajnor",
+          "Prof. Rajnor","BE Class Coordinator",
+          "Project Lab Incharge",
+          "Dept News Coordinator","Member of Social awareness committee",
+          "Calling committee in charge for chandwad region",
+          "Mentor of Autonous Vehicales Tech Challenge for 2021-23","Member of training and placement cell",
+          "Editor of project booklet PRAKALP",
+          "Auditorium Incharge"],
+        "K.R.Nirmal": ["Nirmal Mam",
+          "Khyati Mam",
+          "K.R. Nirmal",
+          "Prof. Nirmal",
+          "Lab Location-232","232","Department NBA Coordinator",
+          "NBA Criteria 7" ,"Member of College Devlopment Cell",
+          "Digital Marketing Committee member(Image Designer)",
+          "STUDENTS GRIEVANCE REDRESSAL CELL","Research","Paper publication", "copyright","patent","Khyati Nirmal","Dr.Khyati Nirmal"],
+          "S B Mahale": ["Mahale Sir",
+          "S.B. Mahale",
+          "Prof. Mahale","ERP PC",
+          "Admission Enquiries Incharge (through Website)",
+          "T&P Member",
+          "Event Coordinator",
+          "III Co-cordinator",
+          "Digital Intractive Lab Incharge",
+          "Mentor for TE Students",
+          "Auditorium In-Charge",
+          "NSS Co-Cordinator",
+          "ERP Admission Form Filling Cordinator",
+          "I- Card Setup & Print Cordinator"],
+          "A.R.Bramhecha": ["Bramhecha Sir",
+          "A.R. Bramhecha",
+          "Prof. Bramhecha","Website Coordinator",
+          "TnP Member",
+          "IAITE Student Chapter - coordinator",
+          "SIC Coordinator",
+          "Industrial Visit Coordinator",
+          "Digital Maketing Coordinator"],
+          "Y.K.Desai": ["Desai mam",
+          "Yogita mam",
+          "Y.K. Desai",
+          "Prof. Desai",
+          "Lab Location-233","233","Yogita Desai"],
+          "L.I.Surana": ["Surana mam",
+          "L.I. Surana",
+          "Prof. Surana",
+          "Lab Location-101",
+          "Programming Lab","101","ERP DCC",
+          "ERP Library Module","Computer Center Lab Incharge","Lekha Surana"],
+          "Gunjan Deshmukh": ["Deshmukh Mam",
+          "Gunjan Deshmukh",
+          "Prof. Deshmukh",
+          "Lab Location-234",
+          "Computer Laboratory 2","234","Lab Incharge(Linux lab)",
+          "360 Degree",
+          "Admission Duties"],
+          "Lab Locations": ["Labs",
+          "All Labs",
+          "Computer Lab",
+          "Lab and their Location"],
+          "Parag Achaliya": ["Achaliya Sir",
+          "Parag Achaliya",
+          "Prof. Achaliya",
+          "Achaliya Sir",
+          "Lab Location-136","136","Minority Cell","Admission Work"],
+          "Class Co-ordinator":["CC","Class Co-ordinator","SE","SE CC","SE Class Coordinator","TE","TE CC","TE Class Coordinator","BE","BE CC","BE Class Coordinator"],
+                    "TTC":["Time Table Incharge","Time Table"],
+                    "GSI":["Girls Sports Incharge","Sports","Girls Sport"],
+                    "CSI":["CSI SBC",
+      "CSI Committee Member (Nashik Chapter)","Computer Society of India"],
+                    "Higher Studies":["Higher Education","M.E","M.Tech"],
+                    "Unnat Bharat Abhiyaan":["Unnat Bharat Abhiyaan"],
+                    "Training and Placement":["Training and Placement","TnP","T&P","Placement Office","Placement","Training"],
+                    "Gate":["Gate","Gate Exam Co-ordinator"],
+                    "SPACE":["SPACE","Student Club"],
+                    "Project Co-ordinator":["Project Co-ordinator","PBL","Project Based Learning","Project"],
+                    "AR":["Ragging","Anti-ragging"],"NPTEL":["NPTEL","NPTEL Coordinator"],
+                    "PC":["Principal","College Principal","Principal Cabin","Principal of college","principle","principle of college"]
+                };
+
+                for (var tag in patterns) {
+                    patterns[tag].forEach(function(pattern) {
+                        if (pattern.toLowerCase().startsWith(input) && !predictions.includes(pattern)) {
+                            predictions.push(pattern);
+                        }
+                    });
+                }
+                return predictions;
+            }
+
+            function showPredictiveText(predictions) {
+                if (predictions.length > 0) {
+                    var html = "";
+                    predictions.forEach(function(prediction) {
+                        html += "<p>" + prediction + "</p>";
+                    });
+                    $(".predictive-text").html(html).show();
+                } else {
+                    $(".predictive-text").hide();
+                }
+            }
+
+            $("#messageArea").on("submit", function(event) {
+                $(".predictive-text").hide();
+                const date = new Date();
+                const hour = date.getHours();
+                const minute = date.getMinutes();
+                const str_time = hour + ":" + minute;
+                var rawText = $("#text").val();
+
+                var userHtml = '<div class="d-flex justify-content-end mb-4"><div class="msg_cotainer_send">' + rawText + '<span class="msg_time_send">' + str_time + '</span></div><div class="img_cont_msg"><img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="rounded-circle user_img_msg"></div></div>';
+
+                $("#text").val("");
+                $("#messageFormeight").append(userHtml);
+
+                $.ajax({
+                    data: {
+                        msg: rawText,
+                    },
+                    type: "POST",
+                    url: "/get",
+                }).done(function(data) {
+                    var lines = data.split("**");
+                    var botHtml = '<div class="d-flex justify-content-start mb-4"><div class="img_cont_msg"><img src="https://i.ibb.co/jRMcPVs/snjb.jpg" class="rounded-circle user_img_msg"></div><div class="msg_cotainer">';
+                    for (var i = 0; i < lines.length; i++) {
+                        botHtml += '<div class="msg_cotainer">' + lines[i] + '</div>'; // Wrap each line with a div
+                    }
+                    botHtml += '<span class="msg_time">' + str_time + '</span></div></div>';
+                    $("#messageFormeight").append($.parseHTML(botHtml));
+
+                    // Smooth scroll to the bottom
+                    var container = $("#messageFormeight");
+                    container.animate({ scrollTop: container.prop("scrollHeight") }, 500);
+                });
+                event.preventDefault();
+            });
+        });
+    </script>
+
+</body>
+
+</html>
